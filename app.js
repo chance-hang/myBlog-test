@@ -75,7 +75,13 @@ if (isProductionHost) {
   if (envLabel) envLabel.textContent = 'LIVE';
 }
 const esc = (value = '') => String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
-const inline = value => esc(value).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+const inline = value => esc(value)
+  .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, alt, src) => {
+    if (/^(javascript|data|vbscript):/i.test(src)) return esc(`![${alt}](${src})`);
+    return `<img src="${src.replace(/"/g, '&quot;')}" alt="${alt.replace(/"/g, '&quot;')}" loading="lazy" class="post-image">`;
+  })
+  .replace(/`([^`]+)`/g, '<code>$1</code>');
 const markdown = (value = '') => value.split(/\n{2,}/).map(block => {
   if (/^[-*] /m.test(block)) return `<ul>${block.split('\n').filter(Boolean).map(line => `<li>${inline(line.replace(/^[-*] /, ''))}</li>`).join('')}</ul>`;
   if (/^\d+\. /m.test(block)) return `<ol>${block.split('\n').filter(Boolean).map(line => `<li>${inline(line.replace(/^\d+\. /, ''))}</li>`).join('')}</ol>`;
@@ -97,14 +103,20 @@ const articleItems = content.articles.map((item, sourceIndex) => ({ ...item, sou
 const topicItems = content.topics.map((item, sourceIndex) => ({ ...item, sourceIndex, kind: 'topic', category: 'ai', excerpt: (item.text || '').split('\n')[0] }));
 const noteItems = content.notes.map((item, sourceIndex) => ({ ...item, sourceIndex, kind: 'note', title: item.label, excerpt: (item.text || '').split('\n')[0], reading: '片刻' }));
 const newestFirst = items => [...items].sort((a, b) => String(b.date).replace(/\D/g, '').localeCompare(String(a.date).replace(/\D/g, '')));
-const cardMarkup = (item, index) => `<article class="journal-card journal-card-${index + 1}">
+const cardMarkup = (item, index) => {
+  const meta = `<span class="journal-meta"><time>${esc(item.date)}</time><b>${esc(item.reading || item.status || item.type || '记录')}</b><em>${esc(categoryNames[item.category] || '记录')}</em></span>`;
+  const art = item.cover
+    ? `<span class="journal-art journal-art-cover"><img class="journal-cover" src="${esc(item.cover)}" alt="" loading="lazy">${meta}</span>`
+    : `<span class="journal-art journal-art-${esc(item.category)} journal-art-${index % 4}"><i aria-hidden="true"></i>${meta}</span>`;
+  return `<article class="journal-card journal-card-${index + 1}${item.cover ? ' has-cover' : ''}">
   <a href="./post.html?id=${item.kind}-${item.sourceIndex}">
-    <span class="journal-art journal-art-${esc(item.category)} journal-art-${index % 4}"><i aria-hidden="true"></i><span class="journal-meta"><time>${esc(item.date)}</time><b>${esc(item.reading || item.status || item.type || '记录')}</b><em>${esc(categoryNames[item.category] || '记录')}</em></span></span>
+    ${art}
     <strong>${esc(item.title || item.label)}</strong>
     <span class="journal-excerpt">${esc(item.excerpt)}</span>
     <span class="journal-arrow" aria-hidden="true">↗</span>
   </a>
 </article>`;
+};
 const renderCardGrid = (root, items, limit = Infinity) => {
   root.innerHTML = items.slice(0, limit).map(cardMarkup).join('');
   root.classList.remove('is-refreshing');
