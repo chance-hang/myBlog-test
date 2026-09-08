@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Chance 的项目、AI 与生活记录。">
+  <title>Chance · 内容索引（测试库）</title>
+  <link rel="stylesheet" href="./style.css?v=white-2">
+</head>
+<body data-page="journal">
+  <header class="journal-topbar">
+    <a href="./index.html">首页 <small>Home</small></a>
+    <a href="./about.html">关于 <small>About</small></a>
+  </header>
+
+  <main class="journal-main" id="main">
+    <header class="journal-masthead">
+      <h1>Chance Journal</h1>
+      <p>项目现场、AI 实践，以及生活里值得留下的片段。</p>
+    </header>
+
+    <nav class="journal-filters" aria-label="内容分类">
+      <button type="button" data-journal-filter="all" aria-pressed="true">全部 <small>All</small></button>
+      <button type="button" data-journal-filter="project" aria-pressed="false">项目 <small>Projects</small></button>
+      <button type="button" data-journal-filter="ai" aria-pressed="false">AI <small>Notes</small></button>
+      <button type="button" data-journal-filter="life" aria-pressed="false">生活 <small>Life</small></button>
+    </nav>
+
+    <section class="journal-section" aria-label="最近记录">
+      <div class="journal-grid" id="journal-posts"></div>
+    </section>
+  </main>
+
+  <footer class="inspiration-footer">
+    <p>DESIGN REFERENCES / 设计参考</p>
+    <span>本站的分屏交互与内容编排受到以下作品启发，并结合 Chance 的项目、AI 与生活记录重新设计。</span>
+    <nav aria-label="设计参考链接">
+      <a href="https://h2.gg/" target="_blank" rel="noopener noreferrer">虎二个人主页 ↗</a>
+      <a href="https://blog-template-gray.vercel.app/" target="_blank" rel="noopener noreferrer">Astro Theme OpenBlog ↗</a>
+    </nav>
+  </footer>
+
+  <script src="./content.js"></script>
+  <script src="./app.js?v=white-2"></script>
+</body>
+</html>
