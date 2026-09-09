@@ -1,7 +1,11 @@
-(() => {
-  const match = new URLSearchParams(location.search).get('id')?.match(/^(article|topic|note)-(\d+)$/);
+window.blogContentReady.then(content => {
+  const id = new URLSearchParams(location.search).get('id') || '';
+  const legacyMatch = id.match(/^(article|topic|note)-(\d+)$/);
+  const stableMatch = id.match(/^(article|topic|note)_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
   const collections = { article: content.articles, topic: content.topics, note: content.notes };
-  const item = match && collections[match[1]]?.[Number(match[2])];
+  const item = stableMatch
+    ? collections[stableMatch[1]]?.find(entry => entry.id === id)
+    : legacyMatch && collections[legacyMatch[1]]?.[Number(legacyMatch[2])];
   const heading = document.getElementById('post-heading');
   const body = document.getElementById('post-body');
   if (!item) {
@@ -11,8 +15,8 @@
   }
   const title = item.title || item.label || '记录';
   document.title = `${title} · Chance`;
-  heading.innerHTML = `<p class="post-meta">${esc(item.date)} <span>·</span> ${esc(item.type || item.status || '随记')}</p><h1>${esc(title)}</h1><p class="post-byline">Chance <span>·</span> ${esc(item.reading || '随笔')}</p>`;
-  body.innerHTML = `${item.summary ? `<p class="post-lead" id="overview">${esc(item.summary)}</p>` : ''}${markdown(item.body || item.text || '')}`;
+  heading.innerHTML = `<p class="post-meta">${window.blogEsc(item.date)} <span>·</span> ${window.blogEsc(item.type || item.status || '随记')}</p><h1>${window.blogEsc(title)}</h1><p class="post-byline">Chance <span>·</span> ${window.blogEsc(item.reading || '随笔')}</p>`;
+  body.innerHTML = `${item.summary ? `<p class="post-lead" id="overview">${window.blogEsc(item.summary)}</p>` : ''}${window.blogMarkdown(item.body || item.text || '')}`;
   const sections = [...body.querySelectorAll('h2,h3,h4')];
   if (!sections.length) {
     const first = body.firstElementChild;
@@ -21,7 +25,7 @@
   const toc = document.getElementById('post-toc');
   toc.innerHTML = `${item.summary ? '<a href="#overview">内容提要</a>' : ''}` + sections.map((section, index) => {
     section.id = `section-${index + 1}`;
-    return `<a href="#${section.id}">${esc(/^H[2-4]$/.test(section.tagName) ? section.textContent : '正文')}</a>`;
+    return `<a href="#${section.id}">${window.blogEsc(/^H[2-4]$/.test(section.tagName) ? section.textContent : '正文')}</a>`;
   }).join('');
   const links = [...toc.querySelectorAll('a')];
   const setActive = id => links.forEach(link => {
@@ -48,4 +52,4 @@
     if (mobile.matches) disclosure.open = false;
     setActive(link.hash.slice(1));
   });
-})();
+});

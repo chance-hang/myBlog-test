@@ -1,4 +1,55 @@
-const content = window.blogContent || { articles: [], notes: [], topics: [] };
+const contentKinds = { articles: 'article', notes: 'note', topics: 'topic' };
+const requiredFields = {
+  articles: ['id', 'date', 'type', 'category', 'reading', 'title', 'summary', 'body', 'cover'],
+  notes: ['id', 'date', 'label', 'category', 'text'],
+  topics: ['id', 'title', 'status', 'date', 'text']
+};
+const isContentRecord = (record, fields, kind, allowLegacy = false) => {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return false;
+  const expected = allowLegacy ? fields.filter(field => field !== 'id') : fields;
+  if (Object.keys(record).length !== expected.length || !expected.every(field => typeof record[field] === 'string' && record[field])) return false;
+  return allowLegacy || new RegExp(`^${kind}_[0-7][0-9A-HJKMNP-TV-Z]{25}$`).test(record.id);
+};
+const validateContent = (candidate, allowLegacy = false) => {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) throw new Error('Invalid content payload');
+  if (!allowLegacy && (candidate.schemaVersion !== 1 || Object.keys(candidate).length !== 4)) throw new Error('Unsupported content schema');
+  const ids = new Set();
+  Object.entries(contentKinds).forEach(([collection, kind]) => {
+    const records = candidate[collection];
+    if (!Array.isArray(records) || !records.length) throw new Error(`Invalid ${collection}`);
+    records.forEach(record => {
+      if (!isContentRecord(record, requiredFields[collection], kind, allowLegacy)) throw new Error(`Invalid ${kind} record`);
+      if (!allowLegacy && (ids.has(record.id) || ids.add(record.id) === false)) throw new Error('Duplicate content ID');
+    });
+  });
+  return candidate;
+};
+const loadLegacyContent = () => new Promise((resolve, reject) => {
+  const script = document.createElement('script');
+  script.src = './content.js?v=cover-1';
+  script.onload = () => {
+    try { resolve(validateContent(window.blogContent, true)); } catch (error) { reject(error); }
+  };
+  script.onerror = () => reject(new Error('Legacy content unavailable'));
+  document.head.append(script);
+});
+window.blogContentReady = fetch('./content.json', { cache: 'no-store' })
+  .then(response => {
+    if (!response.ok) throw new Error(`content.json request failed: ${response.status}`);
+    return response.json();
+  })
+  .then(payload => {
+    window.blogContent = validateContent(payload);
+    window.blogContentSource = 'json';
+    return window.blogContent;
+  })
+  .catch(() => loadLegacyContent().then(payload => {
+    window.blogContent = payload;
+    window.blogContentSource = 'legacy';
+    return payload;
+  }));
+
+window.blogContentReady.then(content => {
 const loader = document.querySelector('.site-loader');
 if (loader) {
   let loaderRemovalTimer;
@@ -90,6 +141,8 @@ const markdown = (value = '') => value.split(/\n{2,}/).map(block => {
   if (heading) return `<h3>${inline(heading[1])}</h3>${block.split('\n').slice(1).filter(Boolean).map(line => `<p>${inline(line)}</p>`).join('')}`;
   return block.split('\n').filter(Boolean).map(line => `<p>${inline(line)}</p>`).join('');
 }).join('');
+window.blogEsc = esc;
+window.blogMarkdown = markdown;
 
 document.querySelectorAll('.inner-header nav a').forEach(link => {
   const page = document.body.dataset.page;
@@ -109,7 +162,7 @@ const cardMarkup = (item, index) => {
     ? `<span class="journal-art journal-art-cover"><img class="journal-cover" src="${esc(item.cover)}" alt="">${meta}</span>`
     : `<span class="journal-art journal-art-${esc(item.category)} journal-art-${index % 4}"><i aria-hidden="true"></i>${meta}</span>`;
   return `<article class="journal-card journal-card-${index + 1}${item.cover ? ' has-cover' : ''}">
-  <a href="./post.html?id=${item.kind}-${item.sourceIndex}">
+  <a href="./post.html?id=${item.id || `${item.kind}-${item.sourceIndex}`}">
     ${art}
     <strong>${esc(item.title || item.label)}</strong>
     <span class="journal-excerpt">${esc(item.excerpt)}</span>
@@ -142,6 +195,8 @@ if (journalRoot) {
     renderJournal(button.dataset.journalFilter);
   }));
 }
+
+});
 
 document.querySelectorAll('.entry').forEach(item => item.addEventListener('toggle', () => {
   const mark = item.querySelector('summary b');
