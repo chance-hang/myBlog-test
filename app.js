@@ -1,13 +1,17 @@
 const contentKinds = { articles: 'article', notes: 'note', topics: 'topic' };
-const requiredFields = {
-  articles: ['id', 'date', 'type', 'category', 'reading', 'title', 'summary', 'body', 'cover'],
-  notes: ['id', 'date', 'label', 'category', 'text'],
-  topics: ['id', 'title', 'status', 'date', 'text']
+const contentFields = {
+  articles: { required: ['id', 'date', 'type', 'category', 'reading', 'title', 'summary', 'body'], optional: ['cover', 'imageRefs'] },
+  notes: { required: ['id', 'date', 'label', 'category', 'text'], optional: ['imageRefs'] },
+  topics: { required: ['id', 'title', 'status', 'date', 'text'], optional: ['category', 'imageRefs'] }
 };
-const isContentRecord = (record, fields, kind, allowLegacy = false) => {
+const isContentRecord = (record, schema, kind, allowLegacy = false) => {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return false;
-  const expected = allowLegacy ? fields.filter(field => field !== 'id') : fields;
-  if (Object.keys(record).length !== expected.length || !expected.every(field => typeof record[field] === 'string' && record[field])) return false;
+  const required = allowLegacy ? schema.required.filter(field => field !== 'id') : schema.required;
+  const allowed = new Set([...required, ...schema.optional]);
+  if (!Object.keys(record).every(field => allowed.has(field)) || !required.every(field => typeof record[field] === 'string' && record[field])) return false;
+  if (Object.hasOwn(record, 'cover') && (typeof record.cover !== 'string' || !record.cover)) return false;
+  if (Object.hasOwn(record, 'category') && (typeof record.category !== 'string' || !record.category)) return false;
+  if (Object.hasOwn(record, 'imageRefs') && !Array.isArray(record.imageRefs)) return false;
   return allowLegacy || new RegExp(`^${kind}_[0-7][0-9A-HJKMNP-TV-Z]{25}$`).test(record.id);
 };
 const validateContent = (candidate, allowLegacy = false) => {
@@ -18,7 +22,7 @@ const validateContent = (candidate, allowLegacy = false) => {
     const records = candidate[collection];
     if (!Array.isArray(records) || !records.length) throw new Error(`Invalid ${collection}`);
     records.forEach(record => {
-      if (!isContentRecord(record, requiredFields[collection], kind, allowLegacy)) throw new Error(`Invalid ${kind} record`);
+      if (!isContentRecord(record, contentFields[collection], kind, allowLegacy)) throw new Error(`Invalid ${kind} record`);
       if (!allowLegacy && (ids.has(record.id) || ids.add(record.id) === false)) throw new Error('Duplicate content ID');
     });
   });
