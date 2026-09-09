@@ -10,13 +10,20 @@
 - 代码发布与内容发布是两条独立流程，不要混在同一个任务中。
 - 不把正式库数据、凭据、PAT、Cookie、token 写入 Test 或提交到 Git。
 
-## Codex 工作方式
-开始任何任务前先读取：
-1. `AGENTS.md`
-2. `docs/ACTIVE_TASK.md`
-3. 与当前任务相关的 `docs/plans/`
-4. 若涉及发布，再读取 `docs/RELEASE.md`
+## Codex 启动任务前必须先同步 GitHub
+GitHub 是规则、任务状态和计划的权威来源，本地文件可能过期。
 
+每次用户要求执行当前任务时，Codex 必须先：
+1. 确认当前 Workspace / Git 仓库是 `myBlog-test`。
+2. 执行 `git status`；若工作区存在未知未提交修改，停止并中文报告，不直接 pull。
+3. 确认处于适合更新基线的状态；常规新任务从 `main` 开始。
+4. 执行 `git pull --ff-only origin main`。
+5. pull 成功后重新读取最新 `AGENTS.md`、`docs/ACTIVE_TASK.md`、ACTIVE_TASK 引用的 Plan；涉及发布时再读取 `docs/RELEASE.md`。
+6. 只执行重新读取后的最新 ACTIVE_TASK，不得依据 pull 前缓存或旧任务文件行动。
+
+若 fast-forward 失败、remote 异常、分支状态有歧义或工作区不干净：停止并报告，不自行 reset/clean/force/rebase 覆盖。
+
+## Codex 工作方式
 只执行 `docs/ACTIVE_TASK.md` 当前明确授权的范围。任务未授权时，不自行创建功能、同步 Prod 或扩大修改范围。
 
 ## 分支与提交
@@ -24,6 +31,7 @@
 - 完成一个功能阶段后集中提交并 push，等待 ChatGPT Review。
 - Review 未通过时只做 Review Fix；Review 通过后再由用户决定合并/验收。
 - 未明确授权不得直接修改 Prod。
+- 活跃任务分支建立后，原则上不要在 Review 前无关推进 `main`；若 `main` 必须前进，Review 前必须先把最新 main 安全同步到任务分支并重新验证，禁止因此扩大业务修改范围。
 
 ## 博客特殊规则
 - 前台代码发布：Test → Review → 人工验收 → Release Ready → Prod 控制发布。
