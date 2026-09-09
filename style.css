@@ -75,7 +75,7 @@ body[data-page="journal"],body[data-page="articles"],body[data-page="topics"],bo
 body:not([data-page="home"])>header,body:not([data-page="home"])>main,body:not([data-page="home"])>footer{animation:.5s cubic-bezier(.16,1,.3,1) both page-slide-in}body:not([data-page="home"])>main{animation-delay:.05s}body:not([data-page="home"])>footer{animation-delay:.1s}
 
 @media(max-width:760px){.journal-filters :is(button,a){min-height:52px;font-size:14px}.category-main{padding-top:34px}.category-main .journal-section{margin-top:34px}}
-@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root),body:not([data-page="home"])>header,body:not([data-page="home"])>main,body:not([data-page="home"])>footer,.journal-grid.is-refreshing .journal-card{animation:none!important}
+@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root),body:not([data-page="home"])>header,body:not([data-page="home"])>main,body:not([data-page="home"])>footer,.journal-grid.is-refreshing .journal-card{animation:none!important}}}
 
 /* 文章封面图（content.js 里给 item.cover 赋值后启用） */
 .journal-art-cover{background:#1f2422}
