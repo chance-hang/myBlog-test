@@ -79,7 +79,7 @@ const inline = value => esc(value)
   .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
   .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, alt, src) => {
     if (/^(javascript|data|vbscript):/i.test(src)) return esc(`![${alt}](${src})`);
-    return `<img src="${src.replace(/"/g, '&quot;')}" alt="${alt.replace(/"/g, '&quot;')}" loading="lazy" class="post-image">`;
+    return `<img src="${src.replace(/"/g, '&quot;')}" alt="${alt.replace(/"/g, '&quot;')}" class="post-image">`;
   })
   .replace(/`([^`]+)`/g, '<code>$1</code>');
 const markdown = (value = '') => value.split(/\n{2,}/).map(block => {
@@ -106,7 +106,7 @@ const newestFirst = items => [...items].sort((a, b) => String(b.date).replace(/\
 const cardMarkup = (item, index) => {
   const meta = `<span class="journal-meta"><time>${esc(item.date)}</time><b>${esc(item.reading || item.status || item.type || '记录')}</b><em>${esc(categoryNames[item.category] || '记录')}</em></span>`;
   const art = item.cover
-    ? `<span class="journal-art journal-art-cover"><img class="journal-cover" src="${esc(item.cover)}" alt="" loading="lazy">${meta}</span>`
+    ? `<span class="journal-art journal-art-cover"><img class="journal-cover" src="${esc(item.cover)}" alt="">${meta}</span>`
     : `<span class="journal-art journal-art-${esc(item.category)} journal-art-${index % 4}"><i aria-hidden="true"></i>${meta}</span>`;
   return `<article class="journal-card journal-card-${index + 1}${item.cover ? ' has-cover' : ''}">
   <a href="./post.html?id=${item.kind}-${item.sourceIndex}">
