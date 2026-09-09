@@ -1,35 +1,42 @@
 # ACTIVE TASK — myBlog Test
 
 ## Status
-Ready for Codex
+Review Fix
 
 ## 当前任务
-执行 Blog 内容协议 Phase A：在 Test 前台建立 `content.json` + 稳定 ID + legacy `content.js` 安全回退的只读兼容层。
+对 Blog 内容协议 Phase A 做一次 Review 修正，不扩大范围。
 
-完整计划：
+原计划：
 `docs/plans/2026-09-09-content-protocol-phase-a-test-compatibility.md`
 
-## Codex 执行要求
-1. 先确认当前 Workspace / 仓库为 `myBlog-test`，工作区干净并位于 `main`。
-2. 执行 `git pull --ff-only origin main`；pull 成功后重新读取最新 `AGENTS.md`、本文件和上述 Plan。
-3. 从最新 main 创建 `codex/content-protocol-phase-a-test-compatibility`。
-4. 只修改 Test；不得触碰 Prod / 独立 Admin / 历史 `admin/`。
-5. 新增严格 `content.json`，把当前 legacy 内容按既定协议迁移并为现有条目分配冻结稳定 ID。
-6. 前台优先读取/校验 `content.json`，失败时安全回退现有 `content.js`；禁止 `eval` / `Function`。
-7. 新稳定 ID 链接与旧数组下标链接必须同时可用。
-8. 保持现有视觉、内容语义、顺序、Test 品牌文案，不做结构重构或无关清理。
-9. 完成 Plan 中静态/回退/链接验证，push 分支后停止，不合并 main，不同步 Prod。
+## Review 发现
+当前 `app.js` 与 `scripts/verify-content.mjs` 把每类条目的字段集合写死为“精确相等”，并把文章 `cover` 视为必填。这与已通过 Review 的 Admin 内容协议设计不一致：
+- `cover` 是文章可选字段；
+- `imageRefs` 是文章 / 短记 / 专题可选字段；
+- 写入协议允许这些可选字段存在，但未知字段仍应拒绝。
+
+如果现在直接合并，当前这批迁移数据虽然能通过，但下一阶段一旦合法出现无 `cover` 的文章或加入 `imageRefs`，前台校验和验证脚本都会把合法 `content.json` 判为无效并回退 legacy，形成协议漂移。
+
+## Codex 修正要求
+1. 保持当前分支 `codex/content-protocol-phase-a-test-compatibility`，不要新建分支。
+2. 先 `git pull --ff-only origin codex/content-protocol-phase-a-test-compatibility`，随后重新读取本文件与原 Plan。
+3. 仅修正协议校验：区分 required / optional / unknown fields。
+4. 文章 required：`id,date,type,category,reading,title,summary,body`；optional：`cover,imageRefs`。
+5. 短记 required：`id,date,label,category,text`；optional：`imageRefs`。
+6. 专题 required：`id,date,title,status,text`；optional：`category,imageRefs`。
+7. 未知字段仍必须拒绝；required 字段仍必须存在且满足现有基本类型/非空约束。
+8. `imageRefs` 如出现，应至少校验为数组；本阶段不必实现完整图片路径/哈希语义校验，避免范围扩大。
+9. legacy 回退校验必须继续兼容现有 `content.js`，不得要求 legacy 出现 `id` 或新可选字段。
+10. 同步修正 `scripts/verify-content.mjs`，使静态验证与前台协议一致；当前迁移内容与顺序不得改变。
+11. 重新运行 `node scripts/verify-content.mjs`、`node --check app.js`、`node --check reader.js`、`git diff --check`；如已有浏览器验证脚本/步骤，复查 JSON 正常路径与 legacy 回退。
+12. commit + push 当前分支后停止，不合并 main，不碰 Prod/Admin。
 
 ## 完成报告
 中文报告：
-- 分支、base SHA、最终 commit SHA
+- 修正 commit SHA
 - 修改文件
-- legacy→JSON 的内容数量与迁移规则
-- 稳定 ID 方案及旧链接兼容结果
-- JSON 正常加载与失败回退验证结果
-- `node --check` / `git diff --check` 等验证
-- push 状态、工作区状态
-- 明确说明未触碰 Prod/Admin、未使用 PAT、未合并 main
-
-## 后续门禁
-ChatGPT Review 通过后仍需要 Test 页面人工验收；人工验收通过前不得开始 Prod 兼容发布。
+- required / optional / unknown 字段校验结果
+- `cover` 缺失与 `imageRefs` 合法存在时的验证结果
+- 原有 JSON / legacy 回退 / 新旧链接是否仍正常
+- 静态验证结果
+- push 与工作区状态
