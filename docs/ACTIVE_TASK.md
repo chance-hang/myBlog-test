@@ -8,8 +8,10 @@
 ## 当前优先级
 
 - **没有 `P0 Active`**：当前没有进行中的 Implementation。
-- **`P1 Queued`**：`myBlog-admin` Phase C —— 安全的 Prod 内容发布/晋级能力。**当前只允许只读审计与 Plan；禁止 Implementation，禁止向 Prod 写内容，禁止 Executor 自行升级到 `P0 Active`。**
-- **`P2 Backlog`**：等待 ChatGPT 派发新需求；新需求到达前 Executor 不主动实施任何变更。
+- **没有 `P1 Queued`**：本仓库没有下一级任务。跨仓协作任务由各自仓库的 `ACTIVE_TASK.md` 管理，不列在本 repo 队列里。
+- **`P2 Backlog`**：等待 ChatGPT 为本仓库派发新需求；新需求到达前 Executor 不主动实施任何变更。
+
+> 注：`myBlog-admin` 仓库的 Phase C（安全 Prod Publisher）由 `myBlog-admin/docs/ACTIVE_TASK.md` 自己管理；本仓库不为其代持状态，也不得据此在本 repo 启动相关 Implementation。
 
 ## STOP 状态机
 
@@ -34,7 +36,8 @@ Blog 内容协议 Phase A 的 Release Ready 记录继续有效；Markdown Render
 
 队列（按 Workflow 3.0 P0/P1/P2 模型，已在"当前优先级"段固化）：
 
-- `P1 Queued`：`myBlog-admin` Phase C —— 安全的 Prod 内容发布/晋级能力。**当前只允许只读审计与 Plan；禁止 Implementation、禁止向 Prod 写内容；禁止 Executor 自行升级为 `P0 Active`。**
+- `P1`：（本仓库无）。
+- 跨仓参考（不构成本 repo 队列项）：`myBlog-admin` 仓库的 Phase C 由其自己的 `docs/ACTIVE_TASK.md` 管理，详见该文件；本仓库不得据此在本 repo 启动 Implementation。
 
 ## Review 修正（2026-09-10）
 第一轮 Review 指出旧测试只检查源码字符串，未验证真实渲染行为。本轮修正：
