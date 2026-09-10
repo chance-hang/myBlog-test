@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown renderer behavior test · myBlog Test</title>
+<style>
+  body { margin: 0 auto; padding: 24px; max-width: 960px; font: 14px/1.7 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; color: #1c1c1c; background: #fbfbfa; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .hint { color: #666; margin: 0 0 20px; }
+  #summary { padding: 12px 16px; border-radius: 8px; font-weight: 700; font-size: 16px; }
+  #summary.pass { background: #e7f6ec; color: #1a7f37; }
+  #summary.fail { background: #fdeaea; color: #b42318; }
+  #summary.pending { background: #eef0f2; color: #555; }
+  ul { list-style: none; padding: 0; margin: 16px 0 0; }
+  li { padding: 6px 10px; border-bottom: 1px solid #e6e6e3; display: flex; gap: 10px; align-items: baseline; }
+  li .mark { font-weight: 700; }
+  li.ok .mark { color: #1a7f37; }
+  li.bad .mark { color: #b42318; }
+  li .name { min-width: 240px; }
+  li .detail { color: #8a4b08; font-family: Consolas, "Courier New", monospace; font-size: 12px; word-break: break-all; }
+  .group { margin-top: 24px; font-weight: 700; font-size: 15px; }
+</style></head>
+<body>
+<h1>Markdown renderer 行为测试</h1>
+<p class="hint">真实执行 <code>window.blogMarkdown()</code> 与 <code>reader.js</code>，对 Markdown 能力矩阵、URL 安全策略、稳定 ID 解析与标题锚点/目录做行为断言。本页不读取、不修改 <code>content.json</code> / <code>content.js</code>。</p>
+<div id="summary" class="pending">RUNNING…</div>
+<div id="results"></div>
+<div id="reader-harness" hidden></div>
+
+<!-- Keep a reference to the real fetch before the fixture stub below. -->
+<script>window.__reportFetch = window.fetch.bind(window);</script>
+<!-- Fixture content: boots app.js without touching real content data. -->
+<script>
+  window.__fixtureContent = {
+    schemaVersion: 1,
+    articles: [{ id: 'article_01J00000000000000000000001', date: '2026-09-10', type: '项目', category: 'project', reading: '3 分钟', title: 'Fixture 标题', summary: 'Fixture 摘要', body: 'b' }],
+    notes: [{ id: 'note_01J00000000000000000000001', date: '2026-09-10', label: 'Fixture 短记', category: 'life', text: 't' }],
+    topics: [{ id: 'topic_01J00000000000000000000001', title: 'Fixture 专题', status: '进行中', date: '2026-09-10', text: 't' }]
+  };
+  window.fetch = async () => ({ ok: true, json: async () => window.__fixtureContent });
+</script>
+<script src="../vendor/marked-18.0.7.umd.js"></script>
+<script src="../vendor/purify-3.4.14.min.js"></script>
+<script src="../app.js"></script>
+<script src="./markdown-renderer-browser-test.js"></script>
+<script>
+const results = [];
+/* Keep app.js's real resolver: reader.js cases replace window.resolveBlogContentItem
+ * to point at one fixture item, so lookups must not go through the override. */
+window.markdownRendererOriginalResolve = window.resolveBlogContentItem;
+const add = (group, name, ok, detail) => results.push({ group, name, ok, detail: detail || '' });
+
+const renderGroup = () => {
+  window.markdownRendererRenderCases.forEach(item => {
+    let html = '';
+    try { html = window.blogMarkdown(item.input); } catch (error) { add('renderer', item.name, false, 'THROW: ' + error.message); return; }
+    const missing = item.contains.filter(token => !html.includes(token));
+    const blocked = item.forbids.filter(token => new RegExp(token, 'i').test(html));
+    if (missing.length || blocked.length) {
+      add('renderer', item.name, false, (missing.length ? 'missing ' + JSON.stringify(missing) + ' ' : '') + (blocked.length ? 'forbidden ' + JSON.stringify(blocked) : '') + ' | output: ' + html);
+    } else add('renderer', item.name, true, html);
+  });
+};
+
+const resolveGroup = () => {
+  const content = window.markdownRendererFixtureContent;
+  window.markdownRendererResolveCases.forEach(item => {
+    const found = window.resolveBlogContentItem(content, item.id);
+    if (!found || found.id !== item.expectId) add('resolve', item.name, false, 'got: ' + (found ? found.id : 'undefined'));
+    else add('resolve', item.name, true, found.id);
+  });
+};
+
+const renderReaderCase = async item => {
+  document.getElementById('reader-harness').innerHTML = '<main class="post-main"><header class="post-heading" id="post-heading"></header><div class="post-layout"><aside class="post-sidebar"><details open class="post-toc"><summary>目录</summary><nav id="post-toc" aria-label="文章目录"></nav></details></aside><article class="post-body" id="post-body"></article></div></main>';
+  const content = window.markdownRendererFixtureContent;
+  const target = window.markdownRendererOriginalResolve(content, item.id);
+  window.resolveBlogContentItem = () => target;
+  Object.defineProperty(window, 'blogContentReady', { configurable: true, value: Promise.resolve(content) });
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '../reader.js?case=' + encodeURIComponent(item.kind) + '&n=' + Math.random().toString(36).slice(2);
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('reader.js 加载失败'));
+    document.head.append(script);
+  });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const body = document.getElementById('post-body');
+  const toc = document.getElementById('post-toc');
+  const headingIds = [].map.call(body.querySelectorAll('h1,h2,h3,h4,h5,h6'), node => node.id);
+  const tocIds = [].map.call(toc.querySelectorAll('a'), node => decodeURIComponent(node.hash.slice(1)));
+  const html = body.innerHTML;
+  const problems = [];
+  if (headingIds.join(',') !== item.headingIds.join(',')) problems.push('heading ids: ' + JSON.stringify(headingIds));
+  if (tocIds.join(',') !== item.toc.join(',')) problems.push('toc: ' + JSON.stringify(tocIds));
+  item.contains.forEach(token => { if (!html.includes(token)) problems.push('missing ' + JSON.stringify(token)); });
+  if (problems.length) add('reader/' + item.kind, 'markdown + 标题锚点 + 目录', false, problems.join(' | ') + ' | html: ' + html);
+  else add('reader/' + item.kind, 'markdown + 标题锚点 + 目录', true, 'ids=' + headingIds.join(',') + ' toc=' + tocIds.join(','));
+};
+
+const readerGroup = async () => {
+  for (const item of window.markdownRendererReaderCases) {
+    try { await renderReaderCase(item); } catch (error) { add('reader/' + item.kind, 'markdown + 标题锚点 + 目录', false, 'THROW: ' + error.message); }
+  }
+};
+
+const paint = () => {
+  const failed = results.filter(entry => !entry.ok);
+  const summary = document.getElementById('summary');
+  summary.className = failed.length ? 'fail' : 'pass';
+  summary.textContent = failed.length
+    ? 'FAIL — ' + failed.length + ' / ' + results.length + ' 条断言失败（见下方明细）'
+    : 'PASS — ' + results.length + ' / ' + results.length + ' 条断言通过';
+  const root = document.getElementById('results');
+  const groups = [...new Set(results.map(entry => entry.group))];
+  root.innerHTML = groups.map(group => {
+    const rows = results.filter(entry => entry.group === group).map(entry =>
+      '<li class="' + (entry.ok ? 'ok' : 'bad') + '"><span class="mark">' + (entry.ok ? 'PASS' : 'FAIL') + '</span><span class="name">' +
+      entry.name.replace(/[<>&]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[char]) + '</span>' +
+      (entry.ok ? '' : '<span class="detail">' + entry.detail.replace(/[<>&]/g, char => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[char]) + '</span>') + '</li>'
+    ).join('');
+    return '<div class="group">' + group + '（' + results.filter(entry => entry.group === group && entry.ok).length + '/' + results.filter(entry => entry.group === group).length + '）</div><ul>' + rows + '</ul>';
+  }).join('');
+};
+
+const report = payload => {
+  try {
+    window.__reportFetch('/__markdown-renderer-report', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
+  } catch { /* file:// 直接打开时无法上报，页面本身即人工验收入口 */ }
+};
+
+const boot = async () => {
+  try {
+    renderGroup();
+    resolveGroup();
+    await readerGroup();
+  } catch (error) {
+    add('boot', '测试执行', false, String(error && error.message || error));
+  }
+  const failed = results.filter(entry => !entry.ok);
+  paint();
+  report({
+    pass: failed.length === 0,
+    total: results.length,
+    failedCount: failed.length,
+    failed: failed.map(entry => entry.group + ' / ' + entry.name + ' :: ' + entry.detail),
+    results
+  });
+  window.__markdownRendererResult = { pass: failed.length === 0, total: results.length, failedCount: failed.length };
+};
+
+if (window.blogContentReady) window.blogContentReady.then(boot, error => {
+  add('boot', 'window.blogContentReady', false, String(error && error.message || error));
+  paint();
+  report({ pass: false, total: 1, failedCount: 1, failed: ['boot: ' + (error && error.message || error)], results });
+});
+else {
+  add('boot', 'window.blogContentReady', false, 'undefined');
+  paint();
+  report({ pass: false, total: 1, failedCount: 1, failed: ['boot: blogContentReady undefined'], results });
+}
+</script>
+</body></html>
