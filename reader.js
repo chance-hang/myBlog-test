@@ -1,11 +1,6 @@
 window.blogContentReady.then(content => {
   const id = new URLSearchParams(location.search).get('id') || '';
-  const legacyMatch = id.match(/^(article|topic|note)-(\d+)$/);
-  const stableMatch = id.match(/^(article|topic|note)_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
-  const collections = { article: content.articles, topic: content.topics, note: content.notes };
-  const item = stableMatch
-    ? collections[stableMatch[1]]?.find(entry => entry.id === id)
-    : legacyMatch && collections[legacyMatch[1]]?.[Number(legacyMatch[2])];
+  const item = window.resolveBlogContentItem(content, id);
   const heading = document.getElementById('post-heading');
   const body = document.getElementById('post-body');
   if (!item) {

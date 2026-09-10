@@ -28,11 +28,34 @@ const validateContent = (candidate, allowLegacy = false) => {
   });
   return candidate;
 };
+const legacyStableIds = {
+  articles: ['article_01J00000000000000000000001', 'article_01J00000000000000000000002', 'article_01J00000000000000000000003', 'article_01J00000000000000000000004', 'article_01J00000000000000000000005', 'article_01J00000000000000000000006', 'article_01J00000000000000000000007', 'article_01J00000000000000000000008', 'article_01J00000000000000000000009'],
+  notes: ['note_01J00000000000000000000001', 'note_01J00000000000000000000002', 'note_01J00000000000000000000003', 'note_01J00000000000000000000004', 'note_01J00000000000000000000005', 'note_01J00000000000000000000006', 'note_01J00000000000000000000007', 'note_01J00000000000000000000008', 'note_01J00000000000000000000009', 'note_01J0000000000000000000000A'],
+  topics: ['topic_01J00000000000000000000001', 'topic_01J00000000000000000000002', 'topic_01J00000000000000000000003', 'topic_01J00000000000000000000004']
+};
+const hydrateLegacyContent = candidate => {
+  const hydrated = { ...candidate };
+  Object.entries(contentKinds).forEach(([collection]) => {
+    const ids = legacyStableIds[collection];
+    if (!Array.isArray(ids) || ids.length !== candidate[collection].length) throw new Error(`Missing legacy ID mapping for ${collection}`);
+    hydrated[collection] = candidate[collection].map((entry, index) => ({ ...entry, id: ids[index] }));
+  });
+  return hydrated;
+};
+const resolveBlogContentItem = (candidate, id) => {
+  const legacyMatch = id.match(/^(article|topic|note)-(\d+)$/);
+  const stableMatch = id.match(/^(article|topic|note)_[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
+  const collections = { article: candidate.articles, topic: candidate.topics, note: candidate.notes };
+  return stableMatch
+    ? collections[stableMatch[1]]?.find(entry => entry.id === id)
+    : legacyMatch && collections[legacyMatch[1]]?.[Number(legacyMatch[2])];
+};
+window.resolveBlogContentItem = resolveBlogContentItem;
 const loadLegacyContent = () => new Promise((resolve, reject) => {
   const script = document.createElement('script');
   script.src = './content.js?v=cover-1';
   script.onload = () => {
-    try { resolve(validateContent(window.blogContent, true)); } catch (error) { reject(error); }
+    try { resolve(hydrateLegacyContent(validateContent(window.blogContent, true))); } catch (error) { reject(error); }
   };
   script.onerror = () => reject(new Error('Legacy content unavailable'));
   document.head.append(script);

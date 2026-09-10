@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { strict as assert } from 'node:assert';
+import vm from 'node:vm';
 
 const collections = { articles: 'article', notes: 'note', topics: 'topic' };
 const fields = {
@@ -25,6 +26,12 @@ const legacyJson = match[1]
   .replace(/\x27((?:\\.|[^\x27\\])*)\x27/g, (_, value) => `"${value}"`);
 const legacy = JSON.parse(legacyJson);
 const content = JSON.parse(await readFile(new URL('../content.json', import.meta.url), 'utf8'));
+const appSource = await readFile(new URL('../app.js', import.meta.url), 'utf8');
+const resolverSource = appSource.slice(0, appSource.indexOf('const loadLegacyContent'));
+assert(resolverSource.includes('window.resolveBlogContentItem'), 'app.js must expose the shared detail resolver');
+const resolverContext = { window: {} };
+vm.runInNewContext(resolverSource, resolverContext);
+const { hydrateLegacyContent, resolveBlogContentItem } = vm.runInNewContext('({ hydrateLegacyContent, resolveBlogContentItem })', resolverContext);
 
 assert.equal(content.schemaVersion, 1, 'schemaVersion must be 1');
 assert.deepEqual(Object.keys(content).sort(), ['articles', 'notes', 'schemaVersion', 'topics']);
@@ -53,4 +60,14 @@ for (const [collection, kind] of Object.entries(collections)) {
 const unknownFieldVariant = structuredClone(content);
 unknownFieldVariant.articles[0].unexpected = 'reject me';
 assert(!validateRecord(unknownFieldVariant.articles[0], fields.articles, 'article'), 'unknown fields must be rejected');
+const legacyFallback = hydrateLegacyContent(legacy);
+for (const [collection, kind] of Object.entries(collections)) {
+  content[collection].forEach((entry, index) => {
+    const legacyUrl = `${kind}-${index}`;
+    assert.equal(resolveBlogContentItem(content, legacyUrl), entry, `${legacyUrl} must resolve through JSON`);
+    assert.equal(resolveBlogContentItem(legacyFallback, legacyUrl).id, entry.id, `${legacyUrl} must resolve through legacy fallback`);
+    assert.equal(resolveBlogContentItem(content, entry.id), entry, `${entry.id} must resolve through JSON`);
+    assert.equal(resolveBlogContentItem(legacyFallback, entry.id).id, entry.id, `${entry.id} must resolve through legacy fallback`);
+  });
+}
 console.log(`content.json verified: ${content.articles.length} articles, ${content.notes.length} notes, ${content.topics.length} topics`);
