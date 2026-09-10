@@ -171,6 +171,13 @@
       "label": "雨天",
       "category": "life",
       "text": "雨声把窗外的世界调低了一格。适合回看一周里那些没有来得及理解的事情。"
+    },
+    {
+      "id": "note_01M253C4G7A139XZRYCBEJFNPA",
+      "date": "2026-09-10",
+      "label": "PAT 写权限验收临时短记",
+      "category": "ai",
+      "text": "# 临时 Test 写权限验收\n\n此条内容仅用于验证 Admin 对 chance-hang/myBlog-test/content.json 的 Contents: Read and write 权限。\n\n验收完成后必须删除此临时测试内容。"
     }
   ],
   "topics": [
@@ -204,4 +211,3 @@
     }
   ]
 }
-
