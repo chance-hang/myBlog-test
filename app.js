@@ -153,21 +153,20 @@ if (isProductionHost) {
   if (envLabel) envLabel.textContent = 'LIVE';
 }
 const esc = (value = '') => String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
-const inline = value => esc(value)
-  .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_, alt, src) => {
-    if (/^(javascript|data|vbscript):/i.test(src)) return esc(`![${alt}](${src})`);
-    return `<img src="${src.replace(/"/g, '&quot;')}" alt="${alt.replace(/"/g, '&quot;')}" class="post-image">`;
-  })
-  .replace(/`([^`]+)`/g, '<code>$1</code>');
-const markdown = (value = '') => value.split(/\n{2,}/).map(block => {
-  if (/^[-*] /m.test(block)) return `<ul>${block.split('\n').filter(Boolean).map(line => `<li>${inline(line.replace(/^[-*] /, ''))}</li>`).join('')}</ul>`;
-  if (/^\d+\. /m.test(block)) return `<ol>${block.split('\n').filter(Boolean).map(line => `<li>${inline(line.replace(/^\d+\. /, ''))}</li>`).join('')}</ol>`;
-  if (/^> /.test(block)) return `<blockquote>${inline(block.replace(/^> /, ''))}</blockquote>`;
-  const heading = block.match(/^##\s+(.+)/);
-  if (heading) return `<h3>${inline(heading[1])}</h3>${block.split('\n').slice(1).filter(Boolean).map(line => `<p>${inline(line)}</p>`).join('')}`;
-  return block.split('\n').filter(Boolean).map(line => `<p>${inline(line)}</p>`).join('');
-}).join('');
+const safeUrl = (value, image = false) => {
+  const raw = String(value || '').trim().replace(/[\u0000-\u001f\u007f\s]+/g, '');
+  try { const decoded = decodeURIComponent(raw).replace(/&(?:#x)?(?:6a|74|76|97);?/gi, ''); if (/^(javascript|data|vbscript):/i.test(decoded)) return ''; } catch { return ''; }
+  if (/^[#/?]|^\.\.?\//.test(raw) || !/^[a-z][a-z\d+.-]*:/i.test(raw)) return raw;
+  return new RegExp(`^(https?|${image ? 'https?' : 'mailto'}):`, 'i').test(raw) ? raw : '';
+};
+const markdown = (value = '') => {
+  if (!window.marked || !window.DOMPurify) throw new Error('Markdown dependencies unavailable');
+  const clean = window.DOMPurify.sanitize(window.marked.parse(String(value), { gfm: true, breaks: false }), { ALLOWED_TAGS: ['h1','h2','h3','h4','h5','h6','p','strong','em','del','ul','ol','li','blockquote','a','code','pre','hr','img','br'], ALLOWED_ATTR: ['href','src','alt','title','class','id'] });
+  const root = document.createElement('template'); root.innerHTML = clean;
+  root.content.querySelectorAll('a').forEach(a => { const href = safeUrl(a.getAttribute('href')); if (href) { a.setAttribute('href', href); if (/^https?:/i.test(href)) a.setAttribute('target', '_blank'), a.setAttribute('rel', 'noopener noreferrer'); } else a.removeAttribute('href'); });
+  root.content.querySelectorAll('img').forEach(img => { const src = safeUrl(img.getAttribute('src'), true); if (src) img.setAttribute('src', src); else img.remove(); });
+  return root.innerHTML;
+};
 window.blogEsc = esc;
 window.blogMarkdown = markdown;
 
