@@ -1,5 +1,7 @@
 # Publish API Contract
 
+> 本目录是 Legacy / 备用维护台实现；独立 `myBlog-admin` 是当前正式维护入口。
+
 维护台前端只接受同源、受登录会话保护的发布服务。
 
 ## GET /api/health
@@ -30,7 +32,7 @@
 1. 验证 HttpOnly、Secure、SameSite 会话 Cookie。
 2. 校验 CSRF、Origin 和 Content-Type。
 3. 仅允许 `target=test|production`。
-4. 将目标硬映射为 `hb27bp49vk-source/myBlog-test` 或 `hb27bp49vk-source/myBlog-prod`，禁止接受客户端仓库名。
+4. 将目标硬映射为 `chance-hang/myBlog-test` 或 `chance-hang/myBlog-prod`，禁止接受客户端仓库名。
 5. 使用分别受限的服务端 Token，权限仅为目标仓库 Contents: write。
 6. 从 `allContent` 生成博客内容文件，先读取远端 SHA，再写入。
 7. 记录发布账号、目标、提交 SHA、时间和可回滚版本，但不记录 Token、登录密钥或正文之外的本地数据。

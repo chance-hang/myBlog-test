@@ -1,6 +1,6 @@
 const REDUCE_MOTION=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STORAGE={profiles:'myBlogAdminProfilesV1',active:'myBlogAdminActiveProfile',content:'myBlogAdminContentV1',device:'myBlogAdminDeviceKeyV1'};
-const REPOS={test:'hb27bp49vk-source/myBlog-test',production:'hb27bp49vk-source/myBlog-prod'};
+const REPOS={test:'chance-hang/myBlog-test',production:'chance-hang/myBlog-prod'};
 const labels={articles:'文章',notes:'短记',topics:'专题',accounts:'账号'};
 const seed={articles:[{id:crypto.randomUUID(),title:'我为什么开始建立自己的 AI 工作流',summary:'工具越来越多以后，真正稀缺的不是工具，而是知道自己为什么使用它们。',body:'我想把 AI 放在一个更具体的位置：不是替我生活，而是帮助我把想法留下来、把重复工作变轻一点。',date:'2026-09-01',status:'published',updatedAt:Date.now()}],notes:[{id:crypto.randomUUID(),title:'真正能留下来的系统',summary:'真正能留下来的系统，不是最完整的那个，而是你愿意每天打开的那个。',body:'',date:'2026-08-30',status:'published',updatedAt:Date.now()}],topics:[{id:crypto.randomUUID(),title:'AI 工作流',summary:'从工具试用，到形成真正能帮我工作的个人方法。',body:'',date:'2026-09-01',status:'draft',updatedAt:Date.now()}]};
 const state={view:'articles',selectedId:null,selectedProfileId:null,dirty:false,session:null,apiConnected:false,content:loadJSON(STORAGE.content,seed),profiles:loadJSON(STORAGE.profiles,[])};
