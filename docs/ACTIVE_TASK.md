@@ -1,7 +1,26 @@
 # ACTIVE TASK — myBlog Test
 
+最后更新：2026-09-10（Workflow 3.0 Phase 2 同步）
+
 ## Status
-Completed / Accepted（Markdown Renderer P0，仅 Test）
+`Completed / Accepted`（Markdown Renderer P0，仅 Test）
+
+## 当前优先级
+
+- **没有 `P0 Active`**：当前没有进行中的 Implementation。
+- **`P1 Queued`**：`myBlog-admin` Phase C —— 安全的 Prod 内容发布/晋级能力。**当前只允许只读审计与 Plan；禁止 Implementation，禁止向 Prod 写内容，禁止 Executor 自行升级到 `P0 Active`。**
+- **`P2 Backlog`**：等待 ChatGPT 派发新需求；新需求到达前 Executor 不主动实施任何变更。
+
+## STOP 状态机
+
+按 `GLOBAL_RULES.md §10`：
+
+- `Awaiting ChatGPT Review`：commit / push 完成后等 ChatGPT Review diff。
+- `Awaiting User Acceptance`：Review 通过后等用户人工验收。
+- `Blocked`：缺信息 / 冲突 / 依赖未到位。
+- `Completed / Accepted`：用户人工验收通过，ChatGPT 派发下一 Task 或执行发布。
+
+Markdown Renderer P0 当前停在 `Completed / Accepted`，等待 ChatGPT 在适当时机派发下一 P0 任务或进入 Prod 发布流程。
 
 ## 当前状态
 Markdown Renderer P0 已完成全部门槛并合并到 Test `main`（`7523fb9f38e4ad3dc2802c5a19460d745bccadbf`）：ChatGPT 第二轮 Review PASS、自动化行为测试 45/45 PASS、本地人工测试页 PASS、Test GitHub Pages 真实人工验收 PASS。计划见 `docs/plans/2026-09-10-unified-markdown-renderer.md` 的「完成与验收记录」。
@@ -13,9 +32,9 @@ Blog 内容协议 Phase A 的 Release Ready 记录继续有效；Markdown Render
 ## 当前任务
 无进行中的 Implementation。
 
-队列（低一级，未启动，等待上面的 P0 治理收尾完成后再单独立项）：
+队列（按 Workflow 3.0 P0/P1/P2 模型，已在"当前优先级"段固化）：
 
-- P1：`myBlog-admin` Phase C —— 安全的 Prod 内容发布/晋级能力。当前只允许只读审计与 Plan；禁止 Implementation、禁止向 Prod 写内容。
+- `P1 Queued`：`myBlog-admin` Phase C —— 安全的 Prod 内容发布/晋级能力。**当前只允许只读审计与 Plan；禁止 Implementation、禁止向 Prod 写内容；禁止 Executor 自行升级为 `P0 Active`。**
 
 ## Review 修正（2026-09-10）
 第一轮 Review 指出旧测试只检查源码字符串，未验证真实渲染行为。本轮修正：
