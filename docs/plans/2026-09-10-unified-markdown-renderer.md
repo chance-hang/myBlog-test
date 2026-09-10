@@ -111,3 +111,21 @@ Markdown source (article.body / note.text / topic.text)
 
 完成实现不等于可发布。实施分支须通过上述自动化检查、ChatGPT Review、Test GitHub Pages 桌面/移动端人工验收；随后才可单独评估 Release Ready。任何 Prod 同步仍须由 `myBlog-prod` 独立 Workspace、独立计划和明确授权执行。
 
+## 完成与验收记录（2026-09-10）
+
+状态：**Completed / Accepted（仅 Test）**。本轮已合并并 push 到 Test `main`，Test main 基线 `7523fb9f38e4ad3dc2802c5a19460d745bccadbf`。
+
+| 门槛 | 结果 |
+| --- | --- |
+| 自动化行为测试 | PASS 45/45（`node scripts/test-markdown-renderer.mjs`，真实浏览器执行 `window.blogMarkdown()` 与 `reader.js`） |
+| 回归检查 | `node --check app.js`、`node --check reader.js`、`node scripts/verify-content.mjs`（9 articles / 10 notes / 4 topics）、`git diff --check` 全部通过 |
+| ChatGPT Review | 第二轮 PASS |
+| 本地人工测试页 | PASS（`scripts/markdown-renderer-browser-test.html`） |
+| Test GitHub Pages 真实人工验收 | PASS |
+
+数据与环境边界复核：`content.json`、`content.js` 的 23 条真实内容未被修改；未触碰 `myBlog-admin` 与 `myBlog-prod`。
+
+Release 边界：本记录只是 Test 完成与验收，不等于 Prod 发布。是否纳入 Prod 由 `myBlog-prod` 独立 Workspace、独立计划与用户明确授权执行；Release Ready 记录见 `docs/RELEASE.md`。
+
+后续队列（不在本 Plan 范围内）：`myBlog-admin` Phase C（安全的 Prod 内容晋级）为低一级任务，保持 Queued，本轮不实施。
+
