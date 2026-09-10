@@ -46,6 +46,12 @@ GitHub 是规则、任务状态和计划的权威来源，本地文件可能过�
 - 不改变 `content.js` 的数据协议。
 - 不改变 Admin 的内容发布协议。
 
+### Markdown 渲染长期治理
+- 不得以继续叠加自研 regex 的方式实现通用 Markdown parser；需要扩展协议时应采用已审查的成熟 parser。
+- 任意 Markdown 到 `innerHTML` 的链路必须在同一功能阶段经过显式 sanitization；parser 输出不是可信 HTML。
+- 第三方前端运行依赖不得依赖 CDN，必须固定版本、连同许可证与来源/完整性记录以本地静态资源发布。
+- renderer 改动必须同时覆盖 article、note、topic 的共用详情链路，不得只修其中一种内容类型。
+
 ## 完成报告
 Codex 完成后用中文报告：
 - 分支名
